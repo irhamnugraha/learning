@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Kuis &amp; Kartu Tajwid</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Amiri:wght@400;700&family=Fraunces:ital,opsz,wght@0,9..144,500;0,9..144,600;1,9..144,500&family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --ink:#122b26;
+    --ink-2:#0d211d;
+    --paper:#f3ecd8;
+    --paper-2:#ece2c6;
+    --gold:#b9902f;
+    --gold-light:#e2c073;
+    --ruby:#7a3430;
+    --ruby-light:#c76a5f;
+    --teal-line:#3f6b60;
+    --ok:#4f7a53;
+    --ok-light:#9fd1a2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    min-height:100vh;
+    background:
+      radial-gradient(circle at 15% 10%, rgba(226,192,115,0.10), transparent 45%),
+      radial-gradient(circle at 90% 85%, rgba(122,52,48,0.12), transparent 40%),
+      var(--ink);
+    font-family:'Inter', sans-serif;
+    color:var(--paper);
+    display:flex;
+    justify-content:center;
+    padding:24px 14px 50px;
+  }
+  .app{ width:100%; max-width:480px; }
+  .eyebrow{
+    font-family:'JetBrains Mono', monospace;
+    font-size:11px;
+    letter-spacing:0.18em;
+    text-transform:uppercase;
+    color:var(--gold-light);
+    display:flex; align-items:center; gap:8px;
+    margin-bottom:6px;
+  }
+  .eyebrow::before{ content:""; width:16px; height:1px; background:var(--gold-light); display:inline-block; }
+  h1{
+    font-family:'Fraunces', serif; font-weight:600; font-size:26px;
+    line-height:1.15; margin:0 0 4px; color:var(--paper);
+  }
+  .sub{ font-size:13px; color:#c9c0a3; margin:0 0 18px; line-height:1.5; }
+
+  /* mode toggle (top level) */
+  .mode-toggle{ display:flex; gap:8px; margin-bottom:18px; }
+  .mode-btn{
+    flex:1; padding:10px 8px; border-radius:10px;
+    border:1px solid rgba(226,192,115,0.25);
+    background:rgba(255,255,255,0.02); color:#d8d0b8;
+    font-weight:700; font-size:12.5px; cursor:pointer; text-align:center;
+    font-family:'JetBrains Mono', monospace; letter-spacing:0.04em;
+  }
+  .mode-btn.active{ background:var(--ruby); color:#fbe9e6; border-color:var(--ruby); }
+
+  .hidden{ display:none !important; }
+
+  /* ---------- shared card shell ---------- */
+  .panel{
+    background:linear-gradient(180deg, var(--paper), var(--paper-2));
+    border:1px solid rgba(185,144,47,0.35);
+    border-radius:18px;
+    box-shadow:0 18px 40px rgba(0,0,0,0.35);
+    padding:20px;
+    color:var(--ink-2);
+    position:relative;
+  }
+  .panel::before{
+    content:""; position:absolute; top:9px; left:9px; right:9px; bottom:9px;
+    border:1px solid rgba(122,52,48,0.16); border-radius:12px; pointer-events:none;
+  }
+
+  /* ---------- setup screen ---------- */
+  label.field-label{
+    display:block; font-family:'JetBrains Mono', monospace; font-size:11px;
+    letter-spacing:0.08em; text-transform:uppercase; color:var(--ruby); margin:0 0 6px;
+  }
+  .choice-grid{ display:flex; flex-direction:column; gap:8px; margin-bottom:18px; }
+  .choice-grid.row{ flex-direction:row; }
+  .choice-btn{
+    padding:13px 12px; border-radius:12px;
+    border:1.5px solid rgba(122,52,48,0.28);
+    background:#fffaf0; color:var(--ink-2);
+    font-family:'Inter'; font-weight:600; font-size:14px;
+    cursor:pointer; text-align:left; flex:1;
+    transition:all .15s ease;
+  }
+  .choice-btn small{ display:block; font-weight:400; font-size:11.5px; color:#8a7f5f; margin-top:2px; }
+  .choice-btn.selected{
+    border-color:var(--ruby); background:rgba(122,52,48,0.08);
+    box-shadow:0 0 0 1px var(--ruby) inset;
+  }
+  .choice-btn.count{ text-align:center; }
+
+  .start-btn{
+    width:100%; padding:15px; border-radius:12px; border:none;
+    background:linear-gradient(180deg, var(--gold-light), var(--gold));
+    color:var(--ink-2); font-family:'Fraunces', serif; font-weight:600; font-size:16px;
+    cursor:pointer; margin-top:4px;
+  }
+  .start-btn:disabled{ opacity:0.45; cursor:not-allowed; }
+
+  /* ---------- quiz screen ---------- */
+  .quiz-header{
+    display:flex; justify-content:space-between; align-items:center;
+    font-family:'JetBrains Mono', monospace; font-size:11.5px; color:#b8ae90; margin-bottom:8px;
+  }
+  .progress-bar{ height:3px; background:rgba(255,255,255,0.08); border-radius:2px; overflow:hidden; margin-bottom:16px; }
+  .progress-fill{ height:100%; background:linear-gradient(90deg, var(--gold), var(--gold-light)); width:0%; transition:width .3s ease; }
+
+  .q-tag{
+    font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.1em; text-transform:uppercase;
+    color:var(--ruby); margin-bottom:8px;
+  }
+  .q-text{
+    font-family:'Fraunces', serif; font-weight:600; font-size:19px; line-height:1.5;
+    color:var(--ink-2); margin:0 0 18px; direction:rtl; unicode-bidi:plaintext; text-align:right;
+  }
+  .q-text.ltr{ direction:ltr; text-align:left; }
+
+  .option-btn{
+    display:block; width:100%; text-align:left;
+    padding:13px 14px; margin-bottom:9px; border-radius:12px;
+    border:1.5px solid rgba(122,52,48,0.25); background:#fffaf0;
+    font-family:'Inter'; font-size:14px; color:var(--ink-2); cursor:pointer;
+    direction:rtl; unicode-bidi:plaintext; line-height:1.5;
+  }
+  .option-btn.ltr{ direction:ltr; }
+  .option-btn.correct{ border-color:var(--ok); background:rgba(79,122,83,0.15); }
+  .option-btn.wrong{ border-color:var(--ruby); background:rgba(122,52,48,0.13); }
+  .option-btn.dim{ opacity:0.55; }
+  .option-btn:disabled{ cursor:default; }
+
+  /* huruf Arab dibungkus & diperbesar relatif terhadap teks Latin di sekitarnya,
+     di mana pun ia muncul (soal, opsi, penjelasan, kartu flip) */
+  .ar-inline{
+    font-family:'Amiri', serif; font-size:1.7em; line-height:1; font-weight:700; color:#5c1f1c;
+    background:linear-gradient(180deg, #f6d9a8, #ecc27a); padding:1px 9px; border-radius:8px;
+    box-shadow:0 1px 0 rgba(0,0,0,0.08) inset; box-decoration-break:clone; -webkit-box-decoration-break:clone;
+  }
+
+  .explain-box{
+    margin-top:6px; padding:12px 14px; border-radius:10px;
+    background:rgba(63,107,96,0.12); border:1px solid rgba(63,107,96,0.35);
+    font-size:13px; line-height:1.5; color:var(--ink-2);
+  }
+  .next-btn{
+    width:100%; margin-top:14px; padding:13px; border-radius:12px; border:none;
+    background:var(--ink-2); color:var(--paper); font-family:'Inter'; font-weight:700; font-size:14px; cursor:pointer;
+  }
+
+  /* ---------- result screen ---------- */
+  .result-score{
+    text-align:center; font-family:'Fraunces', serif; font-weight:600; font-size:46px;
+    color:var(--ruby); margin:6px 0 2px;
+  }
+  .result-pct{ text-align:center; font-family:'JetBrains Mono', monospace; font-size:13px; color:#8a7f5f; margin-bottom:6px; }
+  .result-msg{ text-align:center; font-size:14px; color:var(--ink-2); margin-bottom:16px; }
+
+  .nav-btn{
+    padding:12px 14px; border-radius:10px; background:rgba(255,255,255,0.04);
+    border:1px solid rgba(226,192,115,0.25); color:var(--paper);
+    font-family:'JetBrains Mono', monospace; font-size:12px; cursor:pointer; text-align:center;
+  }
+
+  /* ---------- flashcard mode (unchanged) ---------- */
+  .stage{ perspective:1400px; margin-bottom:18px; }
+  .card{ position:relative; width:100%; height:320px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.8,.2,1); cursor:pointer; }
+  .card.flipped{ transform:rotateY(180deg); }
+  .face{
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:18px;
+    background:linear-gradient(180deg, var(--paper), var(--paper-2));
+    border:1px solid rgba(185,144,47,0.35); box-shadow:0 18px 40px rgba(0,0,0,0.35);
+    display:flex; flex-direction:column; padding:22px; color:var(--ink-2); overflow:hidden;
+  }
+  .face::before{ content:""; position:absolute; top:10px; left:10px; right:10px; bottom:10px; border:1px solid rgba(122,52,48,0.18); border-radius:12px; pointer-events:none; }
+  .face-back{ transform:rotateY(180deg); }
+  .card-tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ruby); margin-bottom:auto; }
+  .arabic-big{ font-family:'Amiri', serif; font-size:192px; text-align:center; line-height:1; color:var(--ink-2); margin:auto 0; direction:rtl; }
+  .front-hint{ text-align:center; font-size:12px; color:#8a7f5f; font-family:'JetBrains Mono', monospace; }
+  .back-title{ font-family:'Fraunces', serif; font-weight:600; font-size:19px; margin:0 0 10px; color:var(--ruby); }
+  .back-body{ font-size:14px; line-height:1.55; color:var(--ink-2); overflow-y:auto; }
+  .back-body b{ color:var(--ruby); }
+  .controls{ display:flex; gap:10px; margin-bottom:12px; }
+  .btn{ flex:1; padding:13px 10px; border-radius:12px; border:none; font-family:'Inter'; font-weight:600; font-size:13.5px; cursor:pointer; }
+  .btn-belum{ background:rgba(122,52,48,0.18); color:#f2c9c4; border:1px solid rgba(122,52,48,0.5); }
+  .btn-hafal{ background:rgba(79,122,83,0.25); color:#c9e9cb; border:1px solid rgba(79,122,83,0.55); }
+  .nav-row{ display:flex; gap:10px; align-items:center; }
+  .nav-btn.wide{ flex:1; text-align:center; }
+  .shuffle{ margin-left:auto; }
+  .stats{ display:flex; justify-content:space-between; margin-top:22px; padding-top:16px; border-top:1px solid rgba(226,192,115,0.15); font-family:'JetBrains Mono', monospace; font-size:11px; color:#a89c78; }
+  .stats span b{ color:var(--gold-light); font-size:14px; }
+  .reset{ display:block; margin:14px auto 0; background:none; border:none; color:#8a7f5f; font-family:'JetBrains Mono', monospace; font-size:11px; text-decoration:underline; cursor:pointer; }
+  .tabs{ display:flex; gap:8px; margin-bottom:16px; }
+  .tab{ flex:1; padding:10px 8px; border-radius:10px; border:1px solid rgba(226,192,115,0.25); background:rgba(255,255,255,0.02); color:#d8d0b8; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; text-align:center; }
+  .tab.active{ background:var(--gold-light); color:var(--ink-2); border-color:var(--gold-light); }
+  .progress-row{ display:flex; justify-content:space-between; align-items:center; font-family:'JetBrains Mono', monospace; font-size:11.5px; color:#b8ae90; margin-bottom:10px; }
+
+  @media (prefers-reduced-motion: reduce){ .card{ transition:none; } }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="eyebrow">Latihan Tajwid</div>
+  <h1 id="pageTitle">Kuis Makharij &amp; Sifat</h1>
+  <p class="sub" id="pageSub">Pilih kategori dan jumlah soal, lalu mulai kuis. Soal selalu diacak setiap main.</p>
+
+  <div class="mode-toggle">
+    <button class="mode-btn active" data-mode="quiz">Kuis</button>
+    <button class="mode-btn" data-mode="flashcard">Kartu Flip</button>
+  </div>
+
+  <!-- ================= QUIZ MODE ================= -->
+  <div id="modeQuiz">
+
+    <!-- SETUP -->
+    <div id="screenSetup" class="screen">
+      <div class="panel">
+        <label class="field-label">Kategori Soal</label>
+        <div class="choice-grid" id="categoryGrid">
+          <button class="choice-btn" data-cat="makharij">Makharijul Huruf<small>Huruf ↔ tempat keluarnya</small></button>
+          <button class="choice-btn" data-cat="sifat">Sifatul Huruf<small>Istilah, pengertian, pasangan sifat</small></button>
+          <button class="choice-btn selected" data-cat="campuran">Campuran<small>Gabungan makharij, sifat &amp; profil huruf</small></button>
+        </div>
+
+        <label class="field-label">Jumlah Soal</label>
+        <div class="choice-grid row" id="countGrid">
+          <button class="choice-btn count" data-count="10">10</button>
+          <button class="choice-btn count selected" data-count="20">20</button>
+          <button class="choice-btn count" data-count="30">30</button>
+        </div>
+
+        <button class="start-btn" id="btnStartQuiz">Mulai Kuis</button>
+      </div>
+    </div>
+
+    <!-- QUIZ -->
+    <div id="screenQuiz" class="screen hidden">
+      <div class="quiz-header">
+        <span id="quizProgressLabel">Soal 1 / 20</span>
+        <span id="quizScoreLabel">Skor: 0</span>
+      </div>
+      <div class="progress-bar"><div class="progress-fill" id="quizProgressFill"></div></div>
+
+      <div class="panel">
+        <div class="q-tag" id="quizTag">CAMPURAN</div>
+        <div class="q-text" id="quizText">—</div>
+        <div id="quizOptions"></div>
+        <div class="explain-box hidden" id="quizExplain"></div>
+        <button class="next-btn hidden" id="btnNext">Lanjut →</button>
+      </div>
+    </div>
+
+    <!-- RESULT -->
+    <div id="screenResult" class="screen hidden">
+      <div class="panel">
+        <div class="q-tag ltr" style="text-align:center">Hasil Kuis</div>
+        <div class="result-score" id="resultScore">0/20</div>
+        <div class="result-pct" id="resultPct">0%</div>
+        <div class="result-msg" id="resultMsg">—</div>
+        <button class="start-btn" id="btnPlayAgain" style="margin-top:6px;">Main Lagi</button>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- ================= FLASHCARD MODE ================= -->
+  <div id="modeFlashcard" class="hidden">
+    <div class="tabs">
+      <div class="tab" data-chapter="makharij">Makharijul Huruf</div>
+      <div class="tab" data-chapter="sifat">Sifatul Huruf</div>
+      <div class="tab active" data-chapter="campuran">Campuran</div>
+    </div>
+
+    <div class="progress-row">
+      <span id="progressLabel">Kartu 1 / 18</span>
+      <span id="progressPct">0% hafal</span>
+    </div>
+    <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
+
+    <div class="stage">
+      <div class="card" id="card">
+        <div class="face face-front">
+          <div class="card-tag" id="frontTag">MAKHARIJUL HURUF</div>
+          <div class="q-text" id="frontArabic" style="margin:auto 0;">—</div>
+          <div class="front-hint">ketuk untuk lihat jawaban</div>
+        </div>
+        <div class="face face-back">
+          <div class="back-title" id="backTitle">Jawaban</div>
+          <div class="back-body" id="backBody">—</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="controls">
+      <button class="btn btn-belum" id="btnBelum">✕ Belum Hafal</button>
+      <button class="btn btn-hafal" id="btnHafal">✓ Hafal</button>
+    </div>
+
+    <div class="nav-row">
+      <button class="nav-btn" id="btnPrev">← Sebelumnya</button>
+      <button class="nav-btn wide" id="btnNextCard">Berikutnya →</button>
+      <button class="nav-btn shuffle" id="btnShuffle" title="Acak">⟲ Acak</button>
+    </div>
+
+    <div class="stats">
+      <span>Hafal <b id="statHafal">0</b></span>
+      <span>Belum <b id="statBelum">0</b></span>
+      <span>Belum dicoba <b id="statUntried">18</b></span>
+    </div>
+
+    <button class="reset" id="btnReset">reset progres bab ini</button>
+  </div>
+
+</div>
+
+<script>
+/* ============================================================
+   MODE TOGGLE
+============================================================ */
+document.querySelectorAll('.mode-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.mode-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    const m = btn.dataset.mode;
+    document.getElementById('modeQuiz').classList.toggle('hidden', m!=='quiz');
+    document.getElementById('modeFlashcard').classList.toggle('hidden', m!=='flashcard');
+    document.getElementById('pageTitle').textContent = m==='quiz' ? 'Kuis Makharij & Sifat' : 'Kartu Latihan Tajwid';
+    document.getElementById('pageSub').textContent = m==='quiz'
+      ? 'Pilih kategori dan jumlah soal, lalu mulai kuis. Soal selalu diacak setiap main.'
+      : 'Ketuk kartu untuk membalik. Tandai "Hafal" atau "Belum" untuk melacak progres. Urutan kartu selalu diacak.';
+  });
+});
+
+/* ============================================================
+   UTIL
+============================================================ */
+function shuffleArr(arr){
+  const a = arr.slice();
+  for (let i=a.length-1;i>0;i--){
+    const j = Math.floor(Math.random()*(i+1));
+    [a[i],a[j]] = [a[j],a[i]];
+  }
+  return a;
+}
+function buildMCQ(correct, pool, size){
+  size = size || 4;
+  const unique = shuffleArr([...new Set(pool)].filter(x=>x!==correct));
+  const distractors = unique.slice(0, Math.min(size-1, unique.length));
+  const options = shuffleArr([correct, ...distractors]);
+  return { options, correctIndex: options.indexOf(correct) };
+}
+function isArabicHeavy(str){
+  const arabicChars = (str.match(/[\u0600-\u06FF]/g) || []).length;
+  return arabicChars > str.replace(/\s/g,'').length * 0.4;
+}
+function wrapArabic(str){
+  return str.replace(/[\u0600-\u06FF][\u0600-\u06FF\s]*[\u0600-\u06FF]|[\u0600-\u06FF]/g, m => `<span class="ar-inline">${m}</span>`);
+}
+
+/* ============================================================
+   QUESTION BANK DATA
+============================================================ */
+const MAKHARIJ_BASE = [
+  {huruf:"ا", makhraj:"Rongga mulut & tenggorokan (Al-Jauf)", group:"Al-Jauf"},
+  {huruf:"و (mad)", makhraj:"Rongga mulut & tenggorokan (Al-Jauf), didahului dhammah", group:"Al-Jauf"},
+  {huruf:"ي (mad)", makhraj:"Rongga mulut & tenggorokan (Al-Jauf), didahului kasrah", group:"Al-Jauf"},
+  {huruf:"ء ه", makhraj:"Pangkal tenggorokan (Aqshal Halq)", group:"Al-Halq"},
+  {huruf:"ع ح", makhraj:"Tengah tenggorokan (Wasthul Halq)", group:"Al-Halq"},
+  {huruf:"غ خ", makhraj:"Ujung tenggorokan (Adnal Halq)", group:"Al-Halq"},
+  {huruf:"ق", makhraj:"Pangkal lidah + langit-langit lunak (belakang)", group:"Al-Lisan"},
+  {huruf:"ك", makhraj:"Pangkal lidah + langit-langit lunak (agak depan dari qaf)", group:"Al-Lisan"},
+  {huruf:"ج ش ي", makhraj:"Tengah lidah + langit-langit keras", group:"Al-Lisan"},
+  {huruf:"ض", makhraj:"Tepi lidah + geraham atas", group:"Al-Lisan"},
+  {huruf:"ل", makhraj:"Tepi ujung lidah + gusi atas (di atas nun)", group:"Al-Lisan"},
+  {huruf:"ن", makhraj:"Ujung lidah + gusi atas (di bawah lam)", group:"Al-Lisan"},
+  {huruf:"ر", makhraj:"Ujung lidah + gusi atas, agak masuk & bergetar", group:"Al-Lisan"},
+  {huruf:"ط د ت", makhraj:"Ujung lidah + pangkal gigi seri atas", group:"Al-Lisan"},
+  {huruf:"ص ز س", makhraj:"Ujung lidah + celah gigi (desis)", group:"Al-Lisan"},
+  {huruf:"ف", makhraj:"Bibir bawah + ujung gigi atas", group:"Asy-Syafatain"},
+  {huruf:"و ب م", makhraj:"Dua bibir", group:"Asy-Syafatain"},
+  {huruf:"نّ / مّ", makhraj:"Rongga hidung (Al-Khaisyum) — dengung", group:"Al-Khaisyum"}
+];
+
+const SIFAT_BASE = [
+  {term:"Hams", def:"Napas ikut keluar/terlepas saat huruf diucapkan", huruf:"ف ح ث ه ش خ ص س ك ت", pair:"Jahr"},
+  {term:"Jahr", def:"Napas tertahan, tidak ikut keluar", huruf:"18 huruf selain kelompok hams", pair:"Hams"},
+  {term:"Syiddah", def:"Suara tertahan total di makhraj", huruf:"أ ج د ق ط ب ك ت", pair:"Rakhawah (dengan Tawassuth di tengah)"},
+  {term:"Tawassuth", def:"Pertengahan; tidak tertahan total & tidak mengalir bebas", huruf:"ل ن ع م ر", pair:"Posisi tengah antara Syiddah & Rakhawah"},
+  {term:"Rakhawah", def:"Suara mengalir bebas dari makhraj", huruf:"huruf selain kelompok syiddah & tawassuth", pair:"Syiddah"},
+  {term:"Isti'la'", def:"Lidah terangkat ke langit-langit, bunyi tebal", huruf:"خ ص ض غ ط ق ظ", pair:"Istifal"},
+  {term:"Istifal", def:"Lidah turun/merendah, bunyi tipis", huruf:"huruf selain kelompok isti'la'", pair:"Isti'la'"},
+  {term:"Ithbaq", def:"Lidah menempel penuh ke langit-langit", huruf:"ص ض ط ظ", pair:"Infitah"},
+  {term:"Infitah", def:"Lidah terbuka, tidak menempel langit-langit", huruf:"huruf selain kelompok ithbaq", pair:"Ithbaq"},
+  {term:"Idzlaq", def:"Mudah dan lancar diucapkan", huruf:"ف ر م ن ل ب", pair:"Ishmat"},
+  {term:"Ishmat", def:"Terasa berat/kaku diucapkan", huruf:"huruf selain kelompok idzlaq", pair:"Idzlaq"},
+  {term:"Qalqalah", def:"Huruf memantul ketika sukun, karena makhrajnya kuat (syiddah)", huruf:"ق ط ب ج د", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Shafir", def:"Suara siulan/desis tajam", huruf:"ص ز س", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Tikrar", def:"Lidah bergetar saat diucapkan", huruf:"ر", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Tafasysyi", def:"Udara menyebar di dalam mulut", huruf:"ش", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Istithalah", def:"Suara memanjang dari tepi lidah hingga ujung", huruf:"ض", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Ghunnah", def:"Dengung yang keluar lewat rongga hidung", huruf:"ن م", pair:"Tidak punya pasangan (berdiri sendiri)"},
+  {term:"Liin", def:"Bunyi lunak/lentur", huruf:"و ي sukun setelah fathah", pair:"Tidak punya pasangan (berdiri sendiri)"}
+];
+
+const HURUF_PROFILE = [
+  {huruf:"ء", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Pangkal tenggorokan", lazimah:null},
+  {huruf:"ب", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Dua bibir", lazimah:"Qalqalah"},
+  {huruf:"ت", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gigi atas", lazimah:null},
+  {huruf:"ث", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gigi atas", lazimah:null},
+  {huruf:"ج", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Tengah lidah", lazimah:"Qalqalah"},
+  {huruf:"ح", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Tengah tenggorokan", lazimah:null},
+  {huruf:"خ", hams:"Hams", tebal:"Isti'la' (tebal)", makhraj:"Ujung tenggorokan", lazimah:null},
+  {huruf:"د", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gigi atas", lazimah:"Qalqalah"},
+  {huruf:"ذ", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gigi atas", lazimah:null},
+  {huruf:"ر", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gusi atas", lazimah:"Tikrar"},
+  {huruf:"ز", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & celah gigi", lazimah:"Shafir"},
+  {huruf:"س", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & celah gigi", lazimah:"Shafir"},
+  {huruf:"ش", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Tengah lidah", lazimah:"Tafasysyi"},
+  {huruf:"ص", hams:"Hams", tebal:"Isti'la' (tebal)", makhraj:"Ujung lidah & celah gigi", lazimah:"Shafir"},
+  {huruf:"ض", hams:"Jahr", tebal:"Isti'la' (tebal)", makhraj:"Tepi lidah & geraham", lazimah:"Istithalah"},
+  {huruf:"ط", hams:"Jahr", tebal:"Isti'la' (tebal)", makhraj:"Ujung lidah & gigi atas", lazimah:"Qalqalah"},
+  {huruf:"ظ", hams:"Jahr", tebal:"Isti'la' (tebal)", makhraj:"Ujung lidah & gigi atas", lazimah:null},
+  {huruf:"ع", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Tengah tenggorokan", lazimah:null},
+  {huruf:"غ", hams:"Jahr", tebal:"Isti'la' (tebal)", makhraj:"Ujung tenggorokan", lazimah:null},
+  {huruf:"ف", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Bibir bawah & gigi atas", lazimah:null},
+  {huruf:"ق", hams:"Jahr", tebal:"Isti'la' (tebal)", makhraj:"Pangkal lidah", lazimah:"Qalqalah"},
+  {huruf:"ك", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Pangkal lidah", lazimah:null},
+  {huruf:"ل", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Tepi ujung lidah & gusi", lazimah:null},
+  {huruf:"م", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Dua bibir", lazimah:"Ghunnah"},
+  {huruf:"ن", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Ujung lidah & gusi", lazimah:"Ghunnah"},
+  {huruf:"و", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Dua bibir", lazimah:"Liin (kondisional)"},
+  {huruf:"ه", hams:"Hams", tebal:"Istifal (tipis)", makhraj:"Pangkal tenggorokan", lazimah:null},
+  {huruf:"ي", hams:"Jahr", tebal:"Istifal (tipis)", makhraj:"Tengah lidah", lazimah:"Liin (kondisional)"}
+];
+
+function genMakharijQuestions(){
+  const makhrajPool = MAKHARIJ_BASE.map(m=>m.makhraj);
+  const hurufPool = MAKHARIJ_BASE.map(m=>m.huruf);
+  const qs = [];
+  MAKHARIJ_BASE.forEach(m=>{
+    const f = buildMCQ(m.makhraj, makhrajPool, 4);
+    qs.push({cat:'makharij', text:`Huruf ${m.huruf} keluar dari makhraj mana?`, options:f.options, correctIndex:f.correctIndex, explain:`${m.huruf} → ${m.makhraj} (${m.group})`});
+    const r = buildMCQ(m.huruf, hurufPool, 4);
+    qs.push({cat:'makharij', text:`Huruf apa yang keluar dari: ${m.makhraj}?`, options:r.options, correctIndex:r.correctIndex, explain:`${m.makhraj} → huruf ${m.huruf}`});
+  });
+  return qs;
+}
+
+function genSifatQuestions(){
+  const termPool = SIFAT_BASE.map(s=>s.term);
+  const defPool = SIFAT_BASE.map(s=>s.def);
+  const hurufPool = SIFAT_BASE.map(s=>s.huruf);
+  const pairPool = SIFAT_BASE.map(s=>s.pair);
+  const qs = [];
+  SIFAT_BASE.forEach(s=>{
+    let g1 = buildMCQ(s.def, defPool, 4);
+    qs.push({cat:'sifat', text:`Apa pengertian sifat ${s.term}?`, options:g1.options, correctIndex:g1.correctIndex, explain:`${s.term}: ${s.def}`});
+    let g2 = buildMCQ(s.term, termPool, 4);
+    qs.push({cat:'sifat', text:`Istilah untuk pengertian: "${s.def}"?`, options:g2.options, correctIndex:g2.correctIndex, explain:`${s.def} → ${s.term}`});
+    let g3 = buildMCQ(s.huruf, hurufPool, 4);
+    qs.push({cat:'sifat', text:`Huruf apa saja untuk sifat ${s.term}?`, options:g3.options, correctIndex:g3.correctIndex, explain:`${s.term}: ${s.huruf}`});
+    let g4 = buildMCQ(s.pair, pairPool, 4);
+    qs.push({cat:'sifat', text:`Apakah sifat ${s.term} punya pasangan? Jika ada, apa pasangannya?`, options:g4.options, correctIndex:g4.correctIndex, explain:`${s.term} ↔ ${s.pair}`});
+  });
+  return qs;
+}
+
+function genProfileQuestions(){
+  const makhrajPool = HURUF_PROFILE.map(h=>h.makhraj);
+  const lazimahPool = ['Qalqalah','Shafir','Tikrar','Tafasysyi','Istithalah','Ghunnah','Liin (kondisional)','Tidak ada sifat khusus'];
+  const qs = [];
+  HURUF_PROFILE.forEach(h=>{
+    let a = buildMCQ(h.hams, ['Hams','Jahr'], 2);
+    qs.push({cat:'campuran', text:`Huruf ${h.huruf} termasuk sifat apa: Hams atau Jahr?`, options:a.options, correctIndex:a.correctIndex, explain:`${h.huruf} = ${h.hams}`});
+    let b = buildMCQ(h.tebal, ["Isti'la' (tebal)","Istifal (tipis)"], 2);
+    qs.push({cat:'campuran', text:`Huruf ${h.huruf} termasuk Isti'la' (tebal) atau Istifal (tipis)?`, options:b.options, correctIndex:b.correctIndex, explain:`${h.huruf} = ${h.tebal}`});
+    let c = buildMCQ(h.makhraj, makhrajPool, 4);
+    qs.push({cat:'campuran', text:`Huruf ${h.huruf} keluar dari makhraj mana?`, options:c.options, correctIndex:c.correctIndex, explain:`${h.huruf} → ${h.makhraj}`});
+    let lz = h.lazimah || 'Tidak ada sifat khusus';
+    let d = buildMCQ(lz, lazimahPool, 4);
+    qs.push({cat:'campuran', text:`Apakah huruf ${h.huruf} punya sifat lazimah (khusus)? Sebutkan jika ada.`, options:d.options, correctIndex:d.correctIndex, explain:`${h.huruf} → ${lz}`});
+  });
+  return qs;
+}
+
+function genComparisonQuestions(){
+  const comps = [
+    {a:'ق', b:'ك', attr:"isti'la' (tebal)", answer:'ق', reason:"ق isti'la' (tebal), ك istifal (tipis) — meski sama-sama pangkal lidah"},
+    {a:'ت', b:'ط', attr:"isti'la' & ithbaq (tebal)", answer:'ط', reason:"ط isti'la'+ithbaq (tebal), ت istifal+infitah (tipis)"},
+    {a:'س', b:'ص', attr:"isti'la' & ithbaq (tebal)", answer:'ص', reason:"ص isti'la'+ithbaq (tebal), س istifal (tipis) — sama-sama shafir"},
+    {a:'ذ', b:'ظ', attr:"isti'la' & ithbaq (tebal)", answer:'ظ', reason:"ظ isti'la'+ithbaq (tebal), ذ istifal+infitah (tipis)"}
+  ];
+  return comps.map(c=>{
+    const opts = shuffleArr([c.a, c.b]);
+    return {cat:'campuran', text:`Antara ${c.a} dan ${c.b}, mana yang ${c.attr}?`, options:opts, correctIndex:opts.indexOf(c.answer), explain:c.reason};
+  });
+}
+
+const POOL_MAKHARIJ = genMakharijQuestions();
+const POOL_SIFAT = genSifatQuestions();
+const POOL_PROFILE = genProfileQuestions();
+const POOL_COMPARISON = genComparisonQuestions();
+const POOL_CAMPURAN = shuffleArr([...POOL_MAKHARIJ, ...POOL_SIFAT, ...POOL_PROFILE, ...POOL_COMPARISON]);
+
+function getPool(cat){
+  if (cat==='makharij') return POOL_MAKHARIJ;
+  if (cat==='sifat') return POOL_SIFAT;
+  return POOL_CAMPURAN;
+}
+
+/* ============================================================
+   QUIZ STATE & FLOW
+============================================================ */
+let quizState = {
+  category:'campuran', count:20,
+  questions:[], index:0, score:0, answered:false, selected:null
+};
+
+function showScreen(id){
+  ['screenSetup','screenQuiz','screenResult'].forEach(s=>{
+    document.getElementById(s).classList.toggle('hidden', s!==id);
+  });
+}
+
+document.getElementById('categoryGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.choice-btn');
+  if(!btn) return;
+  document.querySelectorAll('#categoryGrid .choice-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  quizState.category = btn.dataset.cat;
+});
+document.getElementById('countGrid').addEventListener('click', (e)=>{
+  const btn = e.target.closest('.choice-btn');
+  if(!btn) return;
+  document.querySelectorAll('#countGrid .choice-btn').forEach(b=>b.classList.remove('selected'));
+  btn.classList.add('selected');
+  quizState.count = parseInt(btn.dataset.count, 10);
+});
+
+document.getElementById('btnStartQuiz').addEventListener('click', ()=>{
+  const pool = getPool(quizState.category);
+  const n = Math.min(quizState.count, pool.length);
+  quizState.questions = shuffleArr(pool).slice(0, n);
+  quizState.index = 0;
+  quizState.score = 0;
+  quizState.answered = false;
+  quizState.selected = null;
+  showScreen('screenQuiz');
+  renderQuizQuestion();
+});
+
+function renderQuizQuestion(){
+  const q = quizState.questions[quizState.index];
+  const total = quizState.questions.length;
+  document.getElementById('quizProgressLabel').textContent = `Soal ${quizState.index+1} / ${total}`;
+  document.getElementById('quizScoreLabel').textContent = `Skor: ${quizState.score}`;
+  document.getElementById('quizProgressFill').style.width = (quizState.index/total*100) + '%';
+  document.getElementById('quizTag').textContent = q.cat === 'makharij' ? 'MAKHARIJUL HURUF' : q.cat === 'sifat' ? 'SIFATUL HURUF' : 'CAMPURAN';
+
+  const qTextEl = document.getElementById('quizText');
+  qTextEl.innerHTML = wrapArabic(q.text);
+  qTextEl.classList.toggle('ltr', !isArabicHeavy(q.text));
+
+  const optWrap = document.getElementById('quizOptions');
+  optWrap.innerHTML = '';
+  q.options.forEach((opt, i)=>{
+    const b = document.createElement('button');
+    b.className = 'option-btn' + (isArabicHeavy(opt) ? '' : ' ltr');
+    b.innerHTML = wrapArabic(opt);
+    b.addEventListener('click', ()=>handleAnswer(i));
+    optWrap.appendChild(b);
+  });
+
+  document.getElementById('quizExplain').classList.add('hidden');
+  document.getElementById('btnNext').classList.add('hidden');
+  quizState.answered = false;
+  quizState.selected = null;
+}
+
+function handleAnswer(i){
+  if(quizState.answered) return;
+  quizState.answered = true;
+  quizState.selected = i;
+  const q = quizState.questions[quizState.index];
+  if(i === q.correctIndex) quizState.score++;
+
+  const buttons = document.querySelectorAll('#quizOptions .option-btn');
+  buttons.forEach((b, idx)=>{
+    b.disabled = true;
+    if(idx === q.correctIndex) b.classList.add('correct');
+    else if(idx === i) b.classList.add('wrong');
+    else b.classList.add('dim');
+  });
+
+  const explainBox = document.getElementById('quizExplain');
+  explainBox.innerHTML = wrapArabic(q.explain);
+  explainBox.classList.remove('hidden');
+  document.getElementById('btnNext').classList.remove('hidden');
+  document.getElementById('quizScoreLabel').textContent = `Skor: ${quizState.score}`;
+}
+
+document.getElementById('btnNext').addEventListener('click', ()=>{
+  quizState.index++;
+  if(quizState.index >= quizState.questions.length){
+    finishQuiz();
+  } else {
+    renderQuizQuestion();
+  }
+});
+
+function finishQuiz(){
+  const total = quizState.questions.length;
+  const pct = Math.round((quizState.score/total)*100);
+  document.getElementById('resultScore').textContent = `${quizState.score}/${total}`;
+  document.getElementById('resultPct').textContent = pct + '%';
+  let msg = 'Terus berlatih ya!';
+  if(pct >= 90) msg = 'Mumtaz! Hafalanmu sangat kuat.';
+  else if(pct >= 70) msg = 'Bagus! Sedikit lagi lebih mantap.';
+  else if(pct >= 50) msg = 'Lumayan, ulangi kartu flip untuk memperkuat.';
+  document.getElementById('resultMsg').textContent = msg;
+  showScreen('screenResult');
+}
+
+document.getElementById('btnPlayAgain').addEventListener('click', ()=>{ showScreen('screenSetup'); });
+
+/* ============================================================
+   FLASHCARD MODE (as before)
+============================================================ */
+/* Bank kartu flip memakai sumber data yang sama dengan bank soal kuis
+   (MAKHARIJ_BASE / SIFAT_BASE / HURUF_PROFILE via generator), supaya
+   satu sumber data dipakai untuk dua mode. Kartu flip hanya memetik
+   field text (depan) & explain (belakang), tidak memakai options/correctIndex. */
+const CAT_LABEL = {makharij:'MAKHARIJUL HURUF', sifat:'SIFATUL HURUF', campuran:'CAMPURAN'};
+const DATA = {
+  makharij: POOL_MAKHARIJ.map(q => ({front:q.text, back:q.explain, cat:q.cat})),
+  sifat: POOL_SIFAT.map(q => ({front:q.text, back:q.explain, cat:q.cat})),
+  campuran: POOL_CAMPURAN.map(q => ({front:q.text, back:q.explain, cat:q.cat}))
+};
+
+let chapter = 'campuran';
+let order = [];
+let idx = 0;
+let flipped = false;
+let progress = { makharij: {}, sifat: {}, campuran: {} };
+
+const cardEl = document.getElementById('card');
+const frontArabic = document.getElementById('frontArabic');
+const backTitle = document.getElementById('backTitle');
+const backBody = document.getElementById('backBody');
+const progressLabel = document.getElementById('progressLabel');
+const progressPct = document.getElementById('progressPct');
+const progressFillFc = document.getElementById('progressFill');
+const statHafal = document.getElementById('statHafal');
+const statBelum = document.getElementById('statBelum');
+const statUntried = document.getElementById('statUntried');
+
+function buildOrder(){
+  order = shuffleArr(DATA[chapter].map((_, i) => i));
+  idx = 0; flipped = false;
+  render();
+}
+function currentCardId(){ return chapter + '-' + order[idx]; }
+function render(){
+  const card = DATA[chapter][order[idx]];
+  document.getElementById('frontTag').textContent = CAT_LABEL[card.cat] || CAT_LABEL[chapter];
+  frontArabic.innerHTML = wrapArabic(card.front);
+  frontArabic.classList.toggle('ltr', !isArabicHeavy(card.front));
+  backTitle.textContent = 'Jawaban';
+  backBody.innerHTML = wrapArabic(card.back);
+  cardEl.classList.toggle('flipped', flipped);
+
+  const total = DATA[chapter].length;
+  progressLabel.textContent = `Kartu ${idx+1} / ${total}`;
+
+  let hafal = 0, belum = 0;
+  for (let i=0;i<total;i++){
+    const st = progress[chapter][chapter+'-'+i];
+    if (st === 'hafal') hafal++;
+    else if (st === 'belum') belum++;
+  }
+  const untried = total - hafal - belum;
+  const pct = Math.round((hafal/total)*100);
+  progressPct.textContent = pct + '% hafal';
+  progressFillFc.style.width = pct + '%';
+  statHafal.textContent = hafal;
+  statBelum.textContent = belum;
+  statUntried.textContent = untried;
+}
+
+cardEl.addEventListener('click', () => { flipped = !flipped; cardEl.classList.toggle('flipped', flipped); });
+document.getElementById('btnNextCard').addEventListener('click', () => { idx = (idx + 1) % order.length; flipped = false; render(); });
+document.getElementById('btnPrev').addEventListener('click', () => { idx = (idx - 1 + order.length) % order.length; flipped = false; render(); });
+document.getElementById('btnShuffle').addEventListener('click', () => { order = shuffleArr(order); idx = 0; flipped = false; render(); });
+document.getElementById('btnHafal').addEventListener('click', () => { progress[chapter][currentCardId()] = 'hafal'; idx = (idx + 1) % order.length; flipped = false; render(); });
+document.getElementById('btnBelum').addEventListener('click', () => { progress[chapter][currentCardId()] = 'belum'; idx = (idx + 1) % order.length; flipped = false; render(); });
+document.getElementById('btnReset').addEventListener('click', () => { progress[chapter] = {}; render(); });
+document.querySelectorAll('.tab').forEach(tab => {
+  tab.addEventListener('click', () => {
+    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    tab.classList.add('active');
+    chapter = tab.dataset.chapter;
+    buildOrder();
+  });
+});
+buildOrder();
+</script>
+</body>
+</html>
