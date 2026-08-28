@@ -47,6 +47,26 @@
     text-align:center; font-family:'JetBrains Mono', monospace; font-size:10px;
     color:#5c5a4a; margin-top:28px; letter-spacing:0.02em;
   }
+  .feedback-trigger{
+    display:block; margin:12px auto 0; background:none;
+    border:1px solid rgba(226,192,115,0.25); color:#a89c78;
+    font-family:'JetBrains Mono', monospace; font-size:11px;
+    padding:8px 16px; border-radius:20px; cursor:pointer;
+  }
+  .feedback-overlay{
+    position:fixed; inset:0; background:rgba(0,0,0,0.65);
+    display:flex; align-items:center; justify-content:center;
+    padding:20px; z-index:50;
+  }
+  .feedback-panel{ width:100%; max-width:420px; }
+  .feedback-note{ font-size:12px; color:#6b5f45; margin:0 0 14px; line-height:1.5; }
+  textarea#feedbackMsg{
+    width:100%; min-height:110px; padding:12px 14px; border-radius:10px;
+    border:1px solid rgba(122,52,48,0.3); background:#fffaf0;
+    font-family:'Inter'; font-size:14px; color:var(--ink-2);
+    margin-bottom:12px; resize:vertical;
+  }
+  textarea#feedbackMsg:focus{ outline:2px solid var(--gold); }
   .landing-panel{ margin-bottom:18px; }
   .landing-desc{
     font-size:14px; line-height:1.65; color:var(--ink-2); margin:0 0 18px;
@@ -270,6 +290,29 @@
   .lb-empty, .lb-loading{ text-align:center; font-size:13px; color:#6b5f45; padding:24px 0; }
   .lb-note{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:#6b5f45; text-align:center; margin-top:6px; }
 
+  /* ---------- belajar mode ---------- */
+  .belajar-section-title{
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--gold-light); margin:22px 0 10px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .belajar-section-title:first-child{ margin-top:2px; }
+  .belajar-section-title::before{ content:""; width:14px; height:1px; background:var(--gold-light); flex-shrink:0; }
+  .belajar-card{
+    background:linear-gradient(180deg, var(--paper), var(--paper-2));
+    border:1px solid rgba(185,144,47,0.3); border-radius:14px;
+    padding:14px 16px; margin-bottom:8px; color:var(--ink-2);
+  }
+  .belajar-card-makharij{ display:flex; align-items:center; gap:14px; }
+  .belajar-huruf{
+    font-family:'Amiri', serif; font-weight:700; font-size:34px; color:var(--ruby);
+    flex-shrink:0; min-width:56px; text-align:center; direction:rtl;
+  }
+  .belajar-desc{ font-size:13.5px; line-height:1.5; color:var(--ink-2); }
+  .belajar-term{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; color:var(--ruby); margin-bottom:4px; }
+  .belajar-meta{ font-size:12px; color:#6b5f45; margin-top:4px; line-height:1.5; }
+  .belajar-meta b{ color:var(--ink-2); font-weight:600; }
+
   /* ---------- flashcard mode (unchanged) ---------- */
   .stage{ perspective:1400px; margin-bottom:18px; }
   .card{ position:relative; width:100%; height:320px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.8,.2,1); cursor:pointer; }
@@ -329,6 +372,7 @@
   <div class="mode-toggle">
     <button class="mode-btn active" data-mode="quiz">Kuis</button>
     <button class="mode-btn" data-mode="flashcard">Kartu Flip</button>
+    <button class="mode-btn" data-mode="belajar">Belajar</button>
   </div>
 
   <!-- ================= LOADING / ERROR GATE ================= -->
@@ -477,11 +521,37 @@
     <button class="reset" id="btnReset">reset progres bab ini</button>
   </div>
 
+  <!-- ================= BELAJAR MODE ================= -->
+  <div id="modeBelajar" class="hidden">
+    <div class="tabs" id="belajarTabs">
+      <div class="tab active" data-belajar="makharij">Makharijul Huruf</div>
+      <div class="tab" data-belajar="sifat">Sifatul Huruf</div>
+    </div>
+    <div id="belajarContent"></div>
+  </div>
+
   </div><!-- /appContent -->
 
   </div><!-- /mainApp -->
 
   <div class="footer-copyright">© 2026 Masjid Al Falah Sakura Regency 2</div>
+  <button class="feedback-trigger" id="btnFeedback">💬 Kritik &amp; Saran</button>
+
+  <div id="feedbackOverlay" class="feedback-overlay hidden">
+    <div class="panel feedback-panel">
+      <div class="q-tag ltr">Kritik &amp; Saran</div>
+      <p class="feedback-note">Masukan ini terkirim langsung ke pengelola dan tidak ditampilkan ke pengunjung lain.</p>
+      <label class="field-label" for="feedbackName">Nama (opsional)</label>
+      <input type="text" id="feedbackName" placeholder="Boleh dikosongkan" maxlength="24">
+      <label class="field-label" for="feedbackMsg">Pesan</label>
+      <textarea id="feedbackMsg" placeholder="Tulis kritik, saran, atau laporan bug di sini..." maxlength="1000"></textarea>
+      <div class="save-status hidden" id="feedbackStatus"></div>
+      <div class="save-actions">
+        <button class="nav-btn btn-green" id="btnSubmitFeedback" disabled>Kirim</button>
+        <button class="nav-btn" id="btnCloseFeedback">Batal</button>
+      </div>
+    </div>
+  </div>
 
 </div>
 
@@ -546,6 +616,45 @@ document.getElementById('btnEnterApp').addEventListener('click', ()=>{
 });
 
 /* ============================================================
+   KRITIK & SARAN
+============================================================ */
+function closeFeedback(){
+  document.getElementById('feedbackOverlay').classList.add('hidden');
+  document.getElementById('feedbackMsg').value = '';
+  document.getElementById('feedbackName').value = '';
+  document.getElementById('btnSubmitFeedback').disabled = true;
+  const st = document.getElementById('feedbackStatus');
+  st.classList.add('hidden');
+  st.textContent = '';
+}
+document.getElementById('btnFeedback').addEventListener('click', ()=>{
+  document.getElementById('feedbackOverlay').classList.remove('hidden');
+});
+document.getElementById('btnCloseFeedback').addEventListener('click', closeFeedback);
+document.getElementById('feedbackMsg').addEventListener('input', (e)=>{
+  document.getElementById('btnSubmitFeedback').disabled = e.target.value.trim().length === 0;
+});
+document.getElementById('btnSubmitFeedback').addEventListener('click', async ()=>{
+  const pesan = document.getElementById('feedbackMsg').value.trim();
+  if(!pesan) return;
+  const nama = document.getElementById('feedbackName').value.trim();
+  const st = document.getElementById('feedbackStatus');
+  st.classList.remove('hidden');
+  st.textContent = 'Mengirim…';
+  try{
+    await supaInsert('feedback', {
+      pesan: pesan,
+      nama: nama || null,
+      client_hash: getClientFingerprint()
+    });
+    st.textContent = '✓ Terkirim, terima kasih!';
+    setTimeout(closeFeedback, 1400);
+  }catch(err){
+    st.textContent = err.message || 'Gagal mengirim, coba lagi.';
+  }
+});
+
+/* ============================================================
    MODE TOGGLE
 ============================================================ */
 document.querySelectorAll('.mode-btn').forEach(btn=>{
@@ -555,10 +664,18 @@ document.querySelectorAll('.mode-btn').forEach(btn=>{
     const m = btn.dataset.mode;
     document.getElementById('modeQuiz').classList.toggle('hidden', m!=='quiz');
     document.getElementById('modeFlashcard').classList.toggle('hidden', m!=='flashcard');
-    document.getElementById('pageTitle').textContent = m==='quiz' ? 'Kuis Makharij & Sifat' : 'Kartu Latihan Tajwid';
-    document.getElementById('pageSub').textContent = m==='quiz'
-      ? 'Pilih kategori dan jumlah soal, lalu mulai kuis. Soal selalu diacak setiap main.'
-      : 'Ketuk kartu untuk membalik. Tandai "Hafal" atau "Belum" untuk melacak progres. Urutan kartu selalu diacak.';
+    document.getElementById('modeBelajar').classList.toggle('hidden', m!=='belajar');
+    const titles = { quiz:'Kuis Makharij & Sifat', flashcard:'Kartu Latihan Tajwid', belajar:'Belajar Tajwid' };
+    const subs = {
+      quiz: 'Pilih kategori dan jumlah soal, lalu mulai kuis. Soal selalu diacak setiap main.',
+      flashcard: 'Ketuk kartu untuk membalik. Tandai "Hafal" atau "Belum" untuk melacak progres. Urutan kartu selalu diacak.',
+      belajar: 'Baca penjelasan lengkap tiap huruf dan sifat sebelum latihan.'
+    };
+    document.getElementById('pageTitle').textContent = titles[m];
+    document.getElementById('pageSub').textContent = subs[m];
+    if(m === 'belajar' && document.getElementById('belajarContent').innerHTML.trim() === ''){
+      renderBelajar('makharij');
+    }
   });
 });
 
@@ -900,6 +1017,75 @@ function buildFlashcardData(){
     campuran: POOL_CAMPURAN.map(q => ({front:q.text, back:q.explain, cat:q.cat}))
   };
 }
+
+/* ============================================================
+   BELAJAR MODE — referensi lengkap per kelompok, buat dibaca-baca
+   sebelum latihan (bukan kuis/hafalan tebak-tebakan)
+============================================================ */
+function renderBelajarMakharij(){
+  const groupOrder = ['Al-Jauf','Al-Halq','Al-Lisan','Asy-Syafatain','Al-Khaisyum'];
+  const groupLabel = {
+    'Al-Jauf':'Al-Jauf · Rongga Mulut & Tenggorokan',
+    'Al-Halq':'Al-Halq · Tenggorokan',
+    'Al-Lisan':'Al-Lisan · Lidah',
+    'Asy-Syafatain':'Asy-Syafatain · Bibir',
+    'Al-Khaisyum':'Al-Khaisyum · Rongga Hidung'
+  };
+  const grouped = {};
+  MAKHARIJ_BASE.forEach(m=>{
+    if(!grouped[m.group]) grouped[m.group] = [];
+    grouped[m.group].push(m);
+  });
+  let html = '';
+  groupOrder.forEach(g=>{
+    if(!grouped[g] || !grouped[g].length) return;
+    html += `<div class="belajar-section-title">${groupLabel[g] || g}</div>`;
+    grouped[g].forEach(m=>{
+      html += `<div class="belajar-card belajar-card-makharij">
+        <div class="belajar-huruf">${m.huruf}</div>
+        <div class="belajar-desc">${m.makhraj}</div>
+      </div>`;
+    });
+  });
+  document.getElementById('belajarContent').innerHTML = html;
+}
+
+function renderBelajarSifat(){
+  const FALLBACK = 'Tidak punya pasangan (berdiri sendiri)';
+  const paired = SIFAT_BASE.filter(s => s.pair !== FALLBACK);
+  const standalone = SIFAT_BASE.filter(s => s.pair === FALLBACK);
+  let html = '<div class="belajar-section-title">Berpasangan (Mutadhaddah)</div>';
+  paired.forEach(s=>{
+    html += `<div class="belajar-card">
+      <div class="belajar-term">${s.term}</div>
+      <div class="belajar-desc">${s.def}</div>
+      <div class="belajar-meta"><b>Huruf:</b> ${wrapArabic(s.huruf)}</div>
+      <div class="belajar-meta"><b>Pasangan:</b> ${s.pair}</div>
+    </div>`;
+  });
+  html += '<div class="belajar-section-title">Berdiri Sendiri (Ghairu Mutadhaddah)</div>';
+  standalone.forEach(s=>{
+    html += `<div class="belajar-card">
+      <div class="belajar-term">${s.term}</div>
+      <div class="belajar-desc">${s.def}</div>
+      <div class="belajar-meta"><b>Huruf:</b> ${wrapArabic(s.huruf)}</div>
+    </div>`;
+  });
+  document.getElementById('belajarContent').innerHTML = html;
+}
+
+function renderBelajar(belajarChapter){
+  if(belajarChapter === 'sifat') renderBelajarSifat();
+  else renderBelajarMakharij();
+}
+
+document.getElementById('belajarTabs').addEventListener('click', (e)=>{
+  const tab = e.target.closest('.tab');
+  if(!tab) return;
+  document.querySelectorAll('#belajarTabs .tab').forEach(t=>t.classList.remove('active'));
+  tab.classList.add('active');
+  renderBelajar(tab.dataset.belajar);
+});
 
 let chapter = 'campuran';
 let order = [];
