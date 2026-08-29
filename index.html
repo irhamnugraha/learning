@@ -223,7 +223,8 @@
   .q-text.ltr{ direction:ltr; text-align:left; }
 
   .option-btn{
-    display:block; width:100%; text-align:left;
+    display:flex; flex-direction:column; align-items:flex-start; gap:6px;
+    width:100%; text-align:left;
     padding:13px 14px; margin-bottom:9px; border-radius:12px;
     border:1.5px solid rgba(122,52,48,0.25); background:#fffaf0;
     font-family:'Inter'; font-size:14px; color:var(--ink-2); cursor:pointer;
@@ -233,6 +234,14 @@
   .option-btn.correct{ border-color:var(--ok); background:rgba(79,122,83,0.15); }
   .option-btn.wrong{ border-color:var(--ruby); background:rgba(122,52,48,0.13); }
   .option-btn.dim{ opacity:0.55; }
+  .answer-badge{
+    display:inline-flex; align-items:center; gap:5px;
+    font-family:'JetBrains Mono', monospace; font-weight:700; font-size:11px;
+    letter-spacing:0.04em; text-transform:uppercase; padding:3px 9px; border-radius:20px;
+    direction:ltr;
+  }
+  .answer-badge-correct{ background:var(--ok); color:#f4f9f2; }
+  .answer-badge-wrong{ background:var(--ruby); color:#fbe9e6; }
   .option-btn:disabled{ cursor:default; }
 
   /* huruf Arab dibungkus & diperbesar relatif terhadap teks Latin di sekitarnya,
@@ -936,7 +945,7 @@ function renderQuizQuestion(){
   q.options.forEach((opt, i)=>{
     const b = document.createElement('button');
     b.className = 'option-btn' + (isArabicHeavy(opt) ? '' : ' ltr');
-    b.innerHTML = wrapArabic(opt);
+    b.innerHTML = `<span class="opt-text">${wrapArabic(opt)}</span>`;
     b.addEventListener('click', ()=>handleAnswer(i));
     optWrap.appendChild(b);
   });
@@ -957,9 +966,15 @@ function handleAnswer(i){
   const buttons = document.querySelectorAll('#quizOptions .option-btn');
   buttons.forEach((b, idx)=>{
     b.disabled = true;
-    if(idx === q.correctIndex) b.classList.add('correct');
-    else if(idx === i) b.classList.add('wrong');
-    else b.classList.add('dim');
+    if(idx === q.correctIndex){
+      b.classList.add('correct');
+      b.insertAdjacentHTML('beforeend', '<span class="answer-badge answer-badge-correct">✓ Benar</span>');
+    } else if(idx === i){
+      b.classList.add('wrong');
+      b.insertAdjacentHTML('beforeend', '<span class="answer-badge answer-badge-wrong">✕ Salah</span>');
+    } else {
+      b.classList.add('dim');
+    }
   });
 
   const explainBox = document.getElementById('quizExplain');
