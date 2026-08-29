@@ -968,7 +968,9 @@ function handleAnswer(i){
     b.disabled = true;
     if(idx === q.correctIndex){
       b.classList.add('correct');
-      b.insertAdjacentHTML('beforeend', '<span class="answer-badge answer-badge-correct">✓ Benar</span>');
+      if(idx === i){
+        b.insertAdjacentHTML('beforeend', '<span class="answer-badge answer-badge-correct">✓ Benar</span>');
+      }
     } else if(idx === i){
       b.classList.add('wrong');
       b.insertAdjacentHTML('beforeend', '<span class="answer-badge answer-badge-wrong">✕ Salah</span>');
