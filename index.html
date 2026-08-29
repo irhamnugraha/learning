@@ -334,6 +334,16 @@
   .belajar-term{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; color:var(--ruby); margin-bottom:4px; }
   .belajar-meta{ font-size:12px; color:#6b5f45; margin-top:4px; line-height:1.5; }
   .belajar-meta b{ color:var(--ink-2); font-weight:600; }
+  .belajar-pair-group{
+    border:1.5px dashed rgba(226,192,115,0.55); border-radius:14px;
+    padding:10px; margin-bottom:16px; background:rgba(226,192,115,0.05);
+  }
+  .belajar-pair-label{
+    font-family:'JetBrains Mono', monospace; font-size:10px; text-transform:uppercase;
+    letter-spacing:0.06em; color:var(--gold); margin:2px 4px 8px; font-weight:700;
+  }
+  .belajar-pair-group .belajar-card{ margin-bottom:6px; }
+  .belajar-pair-group .belajar-card:last-child{ margin-bottom:0; }
   .belajar-profil-wrap{ padding:6px 0; }
   .belajar-profil-row{
     display:flex; align-items:center; gap:14px;
@@ -1145,19 +1155,42 @@ function renderBelajarMakharij(){
   document.getElementById('belajarContent').innerHTML = html;
 }
 
+const SIFAT_PAIR_GROUPS = [
+  { label:"Pasangan · Hams ↔ Jahr", terms:["Hams","Jahr"] },
+  { label:"Trio · Syiddah – Tawassuth – Rakhawah", terms:["Syiddah","Tawassuth","Rakhawah"] },
+  { label:"Pasangan · Isti'la' ↔ Istifal", terms:["Isti'la'","Istifal"] },
+  { label:"Pasangan · Ithbaq ↔ Infitah", terms:["Ithbaq","Infitah"] },
+  { label:"Pasangan · Idzlaq ↔ Ishmat", terms:["Idzlaq","Ishmat"] }
+];
+
 function renderBelajarSifat(){
   const FALLBACK = 'Tidak punya pasangan (berdiri sendiri)';
   const paired = SIFAT_BASE.filter(s => s.pair !== FALLBACK);
   const standalone = SIFAT_BASE.filter(s => s.pair === FALLBACK);
-  let html = '<div class="belajar-section-title">Berpasangan (Mutadhaddah)</div>';
-  paired.forEach(s=>{
-    html += `<div class="belajar-card">
+
+  function cardHtml(s){
+    return `<div class="belajar-card">
       <div class="belajar-term">${s.term}</div>
       <div class="belajar-desc">${s.def}</div>
       <div class="belajar-meta"><b>Huruf:</b> ${wrapArabic(s.huruf)}</div>
       <div class="belajar-meta"><b>Pasangan:</b> ${s.pair}</div>
     </div>`;
+  }
+
+  let html = '<div class="belajar-section-title">Berpasangan (Mutadhaddah)</div>';
+  SIFAT_PAIR_GROUPS.forEach(group=>{
+    const ordered = group.terms.map(t => paired.find(s => s.term === t)).filter(Boolean);
+    if(!ordered.length) return;
+    html += `<div class="belajar-pair-group"><div class="belajar-pair-label">${group.label}</div>${ordered.map(cardHtml).join('')}</div>`;
   });
+
+  // jaga-jaga: tampilkan sifat berpasangan yang belum masuk grup manapun (kalau ada data baru)
+  const groupedTerms = SIFAT_PAIR_GROUPS.flatMap(g => g.terms);
+  const ungrouped = paired.filter(s => !groupedTerms.includes(s.term));
+  if(ungrouped.length){
+    html += `<div class="belajar-pair-group"><div class="belajar-pair-label">Lainnya</div>${ungrouped.map(cardHtml).join('')}</div>`;
+  }
+
   html += '<div class="belajar-section-title">Berdiri Sendiri (Ghairu Mutadhaddah)</div>';
   standalone.forEach(s=>{
     html += `<div class="belajar-card">
