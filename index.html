@@ -446,8 +446,16 @@
   .landing-cta.primary small{ color:rgba(13,33,29,0.65); }
 
   /* ================= PROGRESS & BOOKMARK (Belajar) ================= */
-  .belajar-huruf-head{ display:flex; align-items:flex-start; justify-content:space-between; gap:6px; margin-top:10px; }
+  .belajar-huruf-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .belajar-huruf-single{ font-family:'Amiri', serif; font-size:1.5em; color:#5c1f1c; direction:rtl; }
+  .belajar-letters{ display:flex; flex-direction:column; margin-top:12px; padding-top:12px; border-top:1px solid rgba(185,144,47,0.25); }
+  .belajar-letters:empty{ display:none; }
+  .belajar-letter-item{ padding-top:12px; margin-top:12px; border-top:1px dashed rgba(122,52,48,0.18); }
+  .belajar-letter-item:first-child{ padding-top:0; margin-top:0; border-top:none; }
+  @media (max-width:520px){
+    .belajar-card-makharij{ flex-direction:column; align-items:flex-start; gap:6px; }
+    .belajar-huruf{ min-width:auto; text-align:left; }
+  }
   .bookmark-star{ background:none; border:none; font-size:17px; cursor:pointer; line-height:1; padding:0; color:#c9bd8f; }
   .bookmark-star.active{ color:var(--gold); }
   .belajar-progress-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
@@ -524,9 +532,9 @@
   <button class="menu-utama-btn" id="btnMenuUtama">← Menu Utama</button>
 
   <div class="mode-toggle">
-    <button class="mode-btn active" data-mode="quiz">Kuis</button>
-    <button class="mode-btn" data-mode="flashcard">Kartu Flip</button>
     <button class="mode-btn" data-mode="belajar">Belajar</button>
+    <button class="mode-btn" data-mode="flashcard">Latihan</button>
+    <button class="mode-btn active" data-mode="quiz">Challenge</button>
   </div>
 
   <!-- ================= LOADING / ERROR GATE ================= -->
@@ -873,6 +881,20 @@ function updateAuthbarUI(){
   } else if(isGuest){
     guestEl.classList.remove('hidden');
   }
+  updateBookmarkTabVisibility();
+}
+
+/* Tab "Ditandai" (bookmark) cuma relevan untuk user yang login (progres tersimpan). */
+function updateBookmarkTabVisibility(){
+  const bmTab = document.querySelector('#belajarTabs .tab[data-belajar="bookmark"]');
+  if(!bmTab) return;
+  bmTab.classList.toggle('hidden', !currentUser);
+  if(!currentUser && bmTab.classList.contains('active')){
+    bmTab.classList.remove('active');
+    const fallback = document.querySelector('#belajarTabs .tab[data-belajar="makharij"]');
+    fallback.classList.add('active');
+    renderBelajar('makharij');
+  }
 }
 
 function openAuthModal(){
@@ -984,6 +1006,9 @@ sb.auth.onAuthStateChange((event, session)=>{
   updateAuthbarUI();
   if(currentUser) loadUserData();
 });
+// jaga-jaga: pastikan UI (termasuk tab bookmark) sudah dalam state tamu yang benar
+// sejak awal, tidak menunggu callback onAuthStateChange (mis. kalau pustaka gagal dimuat).
+updateAuthbarUI();
 
 function isLoggedIn(){ return !!currentUser; }
 
@@ -1479,9 +1504,12 @@ function buildFlashcardData(){
    BELAJAR MODE — referensi lengkap per kelompok, buat dibaca-baca
    sebelum latihan (bukan kuis/hafalan tebak-tebakan)
 ============================================================ */
+/* Progress (makhraj/sifat/hafal/teruji) & bookmark cuma berguna kalau tersimpan,
+   jadi untuk Tamu (tidak login) elemen-elemen ini tidak ditampilkan sama sekali —
+   contoh ayat tetap tampil karena itu materi publik, bukan progres pribadi. */
 function progressBlockHtml(huruf){
+  if(!currentUser) return quranExampleHtml(huruf);
   const p = getProgress(huruf);
-  const guestNote = (!currentUser) ? '<div class="prog-guest-note">Mode Tamu: progres & bookmark tidak disimpan.</div>' : '';
   return `
     <div class="belajar-progress-row" data-huruf="${huruf}">
       <button class="prog-badge ${p.makhraj_status==='paham'?'on':''}" data-action="makhraj">Makhraj: ${p.makhraj_status==='paham'?'Paham ✓':'Belum'}</button>
@@ -1489,11 +1517,11 @@ function progressBlockHtml(huruf){
       <button class="prog-badge ${p.hafal?'on':''}" data-action="hafal">${p.hafal?'Hafal ✓':'Belum Hafal'}</button>
       <button class="prog-badge ${p.teruji?'on':''}" data-action="teruji">${p.teruji?'Teruji ✓':'Belum Teruji'}</button>
     </div>
-    ${guestNote}
     ${quranExampleHtml(huruf)}
   `;
 }
 function bookmarkStarHtml(huruf){
+  if(!currentUser) return '';
   const marked = isBookmarked(huruf);
   return `<button class="bookmark-star ${marked?'active':''}" data-bookmark="${huruf}" title="Tandai sulit">${marked?'★':'☆'}</button>`;
 }
@@ -1539,11 +1567,13 @@ function extractHurufList(hurufStr){
 }
 
 function hurufMiniBlock(huruf){
-  return `<div class="belajar-huruf-head">
+  return `<div class="belajar-letter-item">
+    <div class="belajar-huruf-head">
       <div class="belajar-huruf-single">${wrapArabic(huruf)}</div>
       ${bookmarkStarHtml(huruf)}
     </div>
-    ${progressBlockHtml(huruf)}`;
+    ${progressBlockHtml(huruf)}
+  </div>`;
 }
 
 function renderBelajarMakharij(){
@@ -1566,10 +1596,14 @@ function renderBelajarMakharij(){
     html += `<div class="belajar-section-title">${groupLabel[g] || g}</div>`;
     grouped[g].forEach(m=>{
       const letters = extractHurufList(m.huruf);
-      html += `<div class="belajar-card belajar-card-makharij">
-        <div class="belajar-huruf">${renderHurufCol(m.huruf)}</div>
-        <div class="belajar-desc">${m.makhraj}</div>
-        ${letters.map(hurufMiniBlock).join('<hr style="border:none;border-top:1px dashed rgba(122,52,48,0.15);margin:10px 0;">')}
+      html += `<div class="belajar-card">
+        <div class="belajar-card-makharij">
+          <div class="belajar-huruf">${renderHurufCol(m.huruf)}</div>
+          <div class="belajar-desc">${m.makhraj}</div>
+        </div>
+        <div class="belajar-letters">
+          ${letters.map(hurufMiniBlock).join('')}
+        </div>
       </div>`;
     });
   });
