@@ -86,7 +86,12 @@
     font-size:14px; line-height:1.65; color:var(--ink-2); margin:0 0 18px;
   }
   .landing-desc b{ color:var(--ruby); }
-  .landing-features{ display:flex; flex-direction:column; gap:12px; margin-bottom:20px; }
+  .landing-features{ display:flex; flex-direction:column; gap:12px; margin-bottom:16px; }
+  .landing-login-note{
+    font-size:12px; line-height:1.6; color:#6b5f45; margin:0 0 4px;
+    padding:10px 12px; border-radius:10px; background:rgba(122,52,48,0.05); border:1px solid rgba(122,52,48,0.15);
+  }
+  .landing-login-note b{ color:var(--ruby); }
   .landing-feature{
     display:flex; align-items:flex-start; gap:12px;
     font-size:13px; line-height:1.5; color:var(--ink-2);
@@ -504,9 +509,11 @@
   <div id="screenLanding" class="panel landing-panel">
     <p class="landing-desc">Aplikasi latihan <b>Tajwid</b> untuk memperdalam <b>Makharijul Huruf</b> (tempat keluarnya huruf) dan <b>Sifatul Huruf</b> (karakter cara mengucapkannya) — dua bab dasar sebelum lancar membaca Al-Qur'an dengan benar.</p>
     <div class="landing-features">
-      <div class="landing-feature"><span class="landing-feature-icon">🧠</span><div><b>Mode Kuis</b><br>Pilihan ganda, soal selalu diacak, langsung tahu benar/salah.</div></div>
-      <div class="landing-feature"><span class="landing-feature-icon">🔄</span><div><b>Mode Kartu Flip</b><br>Hafalan santai, ketuk kartu untuk lihat jawaban.</div></div>
+      <div class="landing-feature"><span class="landing-feature-icon">📖</span><div><b>Belajar</b><br>Referensi lengkap Makharijul Huruf, Sifatul Huruf &amp; Profil Huruf — dilengkapi contoh kata dari ayat Al-Qur'an asli, bukan cuma huruf lepas.</div></div>
+      <div class="landing-feature"><span class="landing-feature-icon">🔄</span><div><b>Latihan</b><br>Kartu flip santai buat mengasah hafalan, tanpa tekanan skor. Ketuk kartu untuk lihat jawaban, tandai Hafal/Belum.</div></div>
+      <div class="landing-feature"><span class="landing-feature-icon">🏆</span><div><b>Challenge</b><br>Kuis pilihan ganda dengan skor, soal selalu diacak — buat menguji sejauh mana kamu sudah benar-benar paham.</div></div>
     </div>
+    <p class="landing-login-note">✓ <b>Masuk</b> biar progres belajarmu kesimpen: status per huruf (paham makhraj, paham sifat, hafal, sampai teruji), huruf yang kamu tandai sulit, dan semuanya tetap ada walau ganti HP.<br>👤 <b>Mode Tamu</b> tetap bisa akses semua mode &amp; materi, cuma progres dan tanda huruf sulit akan hilang begitu keluar dari aplikasi.</p>
     <div class="landing-cta-row">
       <button class="landing-cta" id="btnCtaBelajar"><span class="landing-cta-icon">📖</span>Belajar<small>Referensi lengkap</small></button>
       <button class="landing-cta" id="btnCtaLatihan"><span class="landing-cta-icon">🔄</span>Latihan<small>Kartu flip santai</small></button>
