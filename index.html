@@ -703,7 +703,7 @@
 
   <!-- ================= FLASHCARD MODE ================= -->
   <div id="modeFlashcard" class="hidden">
-    <div class="tabs">
+    <div class="tabs" id="flashcardTabs">
       <div class="tab" data-chapter="makharij">Makharijul Huruf</div>
       <div class="tab" data-chapter="sifat">Sifatul Huruf</div>
       <div class="tab active" data-chapter="campuran">Campuran</div>
@@ -974,6 +974,13 @@ function updateBookmarkTabVisibility(){
     const fallback = document.querySelector('#belajarTabs .tab[data-belajar="makharij"]');
     fallback.classList.add('active');
     renderBelajar('makharij');
+  } else {
+    // status login/tamu berubah sementara user masih di mode Belajar — refresh
+    // supaya bintang bookmark & badge progres langsung sesuai (tidak ketinggalan state lama)
+    const content = document.getElementById('belajarContent');
+    if(content && content.innerHTML.trim() !== ''){
+      renderBelajar(currentBelajarTab());
+    }
   }
 }
 
@@ -1894,9 +1901,9 @@ document.getElementById('btnShuffle').addEventListener('click', () => { order = 
 document.getElementById('btnHafal').addEventListener('click', () => { progress[chapter][currentCardId()] = 'hafal'; idx = (idx + 1) % order.length; flipped = false; render(); });
 document.getElementById('btnBelum').addEventListener('click', () => { progress[chapter][currentCardId()] = 'belum'; idx = (idx + 1) % order.length; flipped = false; render(); });
 document.getElementById('btnReset').addEventListener('click', () => { progress[chapter] = {}; render(); });
-document.querySelectorAll('.tab').forEach(tab => {
+document.querySelectorAll('#flashcardTabs .tab').forEach(tab => {
   tab.addEventListener('click', () => {
-    document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+    document.querySelectorAll('#flashcardTabs .tab').forEach(t => t.classList.remove('active'));
     tab.classList.add('active');
     chapter = tab.dataset.chapter;
     buildOrder();
