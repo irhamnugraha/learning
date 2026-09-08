@@ -340,6 +340,24 @@
     padding:14px 16px; margin-bottom:8px; color:var(--ink-2);
   }
   .belajar-desc{ font-size:13.5px; line-height:1.5; color:var(--ink-2); }
+  /* accordion per kelompok makhraj: default cuma kelompok pertama terbuka,
+     biar tidak perlu scroll panjang buat lihat semua 28 huruf sekaligus */
+  .mkh-accordion{ border-bottom:1px solid rgba(122,52,48,0.15); }
+  .mkh-accordion:last-child{ border-bottom:none; }
+  .mkh-accordion-header{
+    width:100%; display:flex; align-items:center; justify-content:space-between; gap:10px;
+    background:none; border:none; padding:16px 2px; margin:0; cursor:pointer; text-align:left;
+    font-family:'JetBrains Mono', monospace; font-size:11px; letter-spacing:0.08em;
+    text-transform:uppercase; color:var(--ruby); font-weight:700;
+  }
+  .mkh-accordion-meta{
+    display:flex; align-items:center; gap:6px; font-family:'Inter'; font-weight:400;
+    text-transform:none; letter-spacing:0; font-size:11.5px; color:#8a7f5f; flex-shrink:0;
+  }
+  .mkh-accordion-chevron{ display:inline-block; transition:transform .2s ease; }
+  .mkh-accordion.open .mkh-accordion-chevron{ transform:rotate(180deg); }
+  .mkh-accordion-body{ display:none; padding-bottom:14px; }
+  .mkh-accordion.open .mkh-accordion-body{ display:block; }
   /* kartu makharij: satu deskripsi di kepala kartu, huruf dibaris satu per satu */
   .mkh-card{ padding:4px 0 6px; }
   .mkh-header{ font-size:12px; line-height:1.5; color:#6b5f45; padding:12px 16px 13px; border-bottom:1px solid rgba(122,52,48,0.12); }
@@ -1661,6 +1679,15 @@ document.addEventListener('click', (e)=>{
   const belajarContent = document.getElementById('belajarContent');
   if(!belajarContent || !belajarContent.contains(e.target)) return;
 
+  const accHeader = e.target.closest('.mkh-accordion-header');
+  if(accHeader){
+    const item = accHeader.closest('.mkh-accordion');
+    const group = item.dataset.group;
+    if(openMakharijGroups.has(group)) openMakharijGroups.delete(group);
+    else openMakharijGroups.add(group);
+    item.classList.toggle('open');
+    return;
+  }
   const star = e.target.closest('[data-bookmark]');
   if(star){
     const huruf = star.dataset.bookmark;
@@ -1713,6 +1740,12 @@ function mkhLetterRow(huruf, rowNote){
   </div>`;
 }
 
+// Kelompok mana yang sedang terbuka di accordion Makharijul Huruf. null = belum
+// pernah dirender (nanti default kelompok pertama yang punya data akan dibuka).
+// Disimpan di luar fungsi supaya bertahan lintas re-render (klik badge/bookmark
+// tidak menutup ulang kelompok yang sedang dibuka user).
+let openMakharijGroups = null;
+
 function renderBelajarMakharij(){
   const groupOrder = ['Al-Jauf','Al-Halq','Al-Lisan','Asy-Syafatain','Al-Khaisyum'];
   const groupLabel = {
@@ -1727,19 +1760,31 @@ function renderBelajarMakharij(){
     if(!grouped[m.group]) grouped[m.group] = [];
     grouped[m.group].push(m);
   });
+  if(openMakharijGroups === null){
+    const firstWithData = groupOrder.find(g => grouped[g] && grouped[g].length);
+    openMakharijGroups = new Set(firstWithData ? [firstWithData] : []);
+  }
   let html = '';
   groupOrder.forEach(g=>{
     if(!grouped[g] || !grouped[g].length) return;
-    html += `<div class="belajar-section-title">${groupLabel[g] || g}</div>`;
-    grouped[g].forEach(m=>{
+    const letterCount = grouped[g].reduce((sum, m) => sum + extractHurufList(m.huruf).length, 0);
+    const cardsHtml = grouped[g].map(m=>{
       const letters = extractHurufList(m.huruf);
       const noteMatch = m.huruf.match(/\(([^)]*)\)/);
       const rowNote = noteMatch ? noteMatch[1].trim() : '';
-      html += `<div class="belajar-card mkh-card">
+      return `<div class="belajar-card mkh-card">
         <div class="mkh-header">${m.makhraj}</div>
         ${letters.map(h => mkhLetterRow(h, rowNote)).join('')}
       </div>`;
-    });
+    }).join('');
+    const isOpen = openMakharijGroups.has(g);
+    html += `<div class="mkh-accordion ${isOpen ? 'open' : ''}" data-group="${g}">
+      <button class="mkh-accordion-header">
+        <span>${groupLabel[g] || g}</span>
+        <span class="mkh-accordion-meta">${letterCount} huruf <span class="mkh-accordion-chevron">▾</span></span>
+      </button>
+      <div class="mkh-accordion-body">${cardsHtml}</div>
+    </div>`;
   });
   document.getElementById('belajarContent').innerHTML = html;
 }
