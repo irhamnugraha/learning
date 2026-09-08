@@ -1149,12 +1149,24 @@ function currentBelajarTab(){
   return active ? active.dataset.belajar : 'makharij';
 }
 
-sb.auth.onAuthStateChange((event, session)=>{
+function handleAuthStateChange(event, session){
   currentUser = session ? session.user : null;
   if(currentUser) isGuest = false;
   updateAuthbarUI();
   if(currentUser) loadUserData();
-});
+
+  // Redirect OAuth (Google) & sesi yang sudah tersimpan (buka lagi web-nya sambil
+  // masih login) sama-sama muncul lewat event ini, bukan lewat submit form kita.
+  // Kalau saat itu user masih di landing (belum pernah masuk app), langsung
+  // lempar ke Belajar — jangan biarkan nyangkut di halaman depan lagi.
+  if(currentUser && (event === 'INITIAL_SESSION' || event === 'SIGNED_IN')){
+    const mainAppEl = document.getElementById('mainApp');
+    if(mainAppEl && mainAppEl.classList.contains('hidden')){
+      enterApp('belajar');
+    }
+  }
+}
+sb.auth.onAuthStateChange(handleAuthStateChange);
 // jaga-jaga: pastikan UI (termasuk tab bookmark) sudah dalam state tamu yang benar
 // sejak awal, tidak menunggu callback onAuthStateChange (mis. kalau pustaka gagal dimuat).
 updateAuthbarUI();
