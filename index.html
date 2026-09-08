@@ -339,15 +339,20 @@
     border:1px solid rgba(185,144,47,0.3); border-radius:14px;
     padding:14px 16px; margin-bottom:8px; color:var(--ink-2);
   }
-  .belajar-card-makharij{ display:flex; align-items:center; gap:14px; }
-  .belajar-huruf{
-    font-family:'Inter', sans-serif; font-size:14px; color:var(--ink-2);
-    flex-shrink:0; min-width:80px; text-align:center;
-  }
-  .belajar-huruf-note{
-    font-size:10.5px; color:#6b5f45; margin-top:4px; white-space:nowrap;
-  }
   .belajar-desc{ font-size:13.5px; line-height:1.5; color:var(--ink-2); }
+  /* kartu makharij: satu deskripsi di kepala kartu, huruf dibaris satu per satu */
+  .mkh-card{ padding:4px 0 6px; }
+  .mkh-header{ font-size:12px; line-height:1.5; color:#6b5f45; padding:12px 16px 13px; border-bottom:1px solid rgba(122,52,48,0.12); }
+  .mkh-row{ display:flex; align-items:flex-start; gap:13px; padding:12px 16px; }
+  .mkh-row + .mkh-row{ border-top:1px solid rgba(122,52,48,0.1); }
+  .mkh-tile{ flex-shrink:0; }
+  .mkh-mid{ flex:1; min-width:0; }
+  .mkh-line1{ display:flex; align-items:center; gap:8px; font-size:13px; font-weight:400; color:var(--ink-2); }
+  .mkh-pill{
+    font-family:'JetBrains Mono', monospace; font-size:9px; letter-spacing:0.05em; text-transform:uppercase;
+    color:var(--ruby); background:rgba(122,52,48,0.1); border-radius:999px; padding:1px 6px;
+  }
+  .mkh-line1 .bookmark-star{ margin-left:auto; font-size:15px; }
   .belajar-term{ font-family:'Fraunces', serif; font-weight:600; font-size:17px; color:var(--ruby); margin-bottom:4px; }
   .belajar-meta{ font-size:12px; color:#6b5f45; margin-top:4px; line-height:1.5; }
   .belajar-meta b{ color:var(--ink-2); font-weight:600; }
@@ -483,14 +488,6 @@
   /* ================= PROGRESS & BOOKMARK (Belajar) ================= */
   .belajar-huruf-head{ display:flex; align-items:center; justify-content:space-between; gap:6px; }
   .belajar-huruf-single{ font-family:'Amiri', serif; font-size:1.5em; color:#5c1f1c; direction:rtl; }
-  .belajar-letters{ display:flex; flex-direction:column; margin-top:12px; padding-top:12px; border-top:1px solid rgba(185,144,47,0.25); }
-  .belajar-letters:empty{ display:none; }
-  .belajar-letter-item{ padding-top:12px; margin-top:12px; border-top:1px dashed rgba(122,52,48,0.18); }
-  .belajar-letter-item:first-child{ padding-top:0; margin-top:0; border-top:none; }
-  @media (max-width:520px){
-    .belajar-card-makharij{ flex-direction:column; align-items:flex-start; gap:6px; }
-    .belajar-huruf{ min-width:auto; text-align:left; }
-  }
   .bookmark-star{ background:none; border:none; font-size:17px; cursor:pointer; line-height:1; padding:0; color:#c9bd8f; }
   .bookmark-star.active{ color:var(--gold); }
   .belajar-progress-row{ display:flex; flex-wrap:wrap; gap:5px; margin-top:8px; }
@@ -504,8 +501,6 @@
     margin-top:10px; padding:10px 12px; border-radius:10px; background:rgba(122,52,48,0.06);
     border-left:3px solid var(--ruby);
   }
-  .belajar-letter-item > .quran-example{ margin-top:0; }
-  .belajar-letter-item > .belajar-progress-row{ margin-top:10px; }
   .quran-example .qe-label{
     font-size:10px; letter-spacing:0.08em; color:var(--ruby);
     margin-bottom:6px; display:flex; align-items:center; gap:8px;
@@ -515,7 +510,6 @@
   .quran-example .qe-ref{ font-family:'JetBrains Mono', monospace; font-size:10.5px; color:#8a7f5f; margin-top:4px; }
   .qe-huruf-inline{ font-family:'Amiri', serif; font-size:1.15em; color:#5c1f1c; line-height:1; flex-shrink:0; }
   .qe-label .bookmark-star{ margin-left:auto; font-size:15px; }
-  .belajar-huruf-head-compact{ display:flex; align-items:center; gap:8px; }
   .belajar-empty{ font-size:13px; color:#c9c0a3; text-align:center; padding:24px 12px; font-style:italic; }
   .belajar-tabs-wrap{ display:flex; gap:8px; }
   .tab.tab-star{ flex:0 0 auto; padding:10px 12px; }
@@ -1678,13 +1672,6 @@ document.addEventListener('click', (e)=>{
   }
 });
 
-function renderHurufCol(hurufStr){
-  const m = hurufStr.match(/^(.*?)\s*(\([^)]*\))?$/);
-  const main = (m && m[1]) ? m[1].trim() : hurufStr;
-  const note = (m && m[2]) ? m[2].trim() : '';
-  return wrapArabic(main) + (note ? `<div class="belajar-huruf-note">${note}</div>` : '');
-}
-
 /* Satu baris makhraj bisa memuat lebih dari satu huruf (mis. "ط د ت" atau "ء ه").
    Progress/bookmark/contoh ayat dilacak per huruf tunggal, jadi kita pecah dulu. */
 function extractHurufList(hurufStr){
@@ -1694,18 +1681,25 @@ function extractHurufList(hurufStr){
   return [...new Set(parts.map(stripDiacritics).filter(p => /[؀-ۿ]/.test(p)))];
 }
 
-function hurufMiniBlock(huruf){
+const HURUF_LATIN_NAME = {
+  'ا':'Alif', 'و':'Wawu', 'ي':'Ya', 'ء':'Hamzah', 'ه':'Ha Kecil', 'ع':"'Ain", 'ح':'Ha Besar',
+  'غ':'Ghain', 'خ':'Kha', 'ق':'Qaf', 'ك':'Kaf', 'ج':'Jim', 'ش':'Syin', 'ض':'Dhad',
+  'ل':'Lam', 'ن':'Nun', 'ر':'Ra', 'ط':'Tha', 'د':'Dal', 'ت':'Ta', 'ص':'Shad', 'ز':'Za',
+  'س':'Sin', 'ظ':'Zha', 'ذ':'Dzal', 'ث':'Tsa', 'ف':'Fa', 'ب':'Ba', 'م':'Mim'
+};
+
+function mkhLetterRow(huruf, rowNote){
+  const name = HURUF_LATIN_NAME[huruf] || huruf;
   const star = bookmarkStarHtml(huruf);
-  const header = `<span class="qe-huruf-inline">${wrapArabic(huruf)}</span>${star}`;
-  const example = quranExampleHtml(huruf, `<span class="qe-huruf-inline">${wrapArabic(huruf)}</span>${star}`);
+  const example = quranExampleHtml(huruf);
   const badges = currentUser ? progressBadgesHtml(huruf) : '';
-  if(example){
-    return `<div class="belajar-letter-item">${example}${badges}</div>`;
-  }
-  // huruf tanpa contoh ayat (jarang terjadi): tetap tampilkan identitas huruf + progres
-  return `<div class="belajar-letter-item">
-    <div class="belajar-huruf-head-compact">${header}</div>
-    ${badges}
+  return `<div class="mkh-row">
+    <div class="mkh-tile">${wrapArabic(huruf)}</div>
+    <div class="mkh-mid">
+      <div class="mkh-line1"><span>${name}</span>${rowNote ? `<span class="mkh-pill">${rowNote}</span>` : ''}${star}</div>
+      ${example}
+      ${badges}
+    </div>
   </div>`;
 }
 
@@ -1729,14 +1723,11 @@ function renderBelajarMakharij(){
     html += `<div class="belajar-section-title">${groupLabel[g] || g}</div>`;
     grouped[g].forEach(m=>{
       const letters = extractHurufList(m.huruf);
-      html += `<div class="belajar-card">
-        <div class="belajar-card-makharij">
-          <div class="belajar-huruf">${renderHurufCol(m.huruf)}</div>
-          <div class="belajar-desc">${m.makhraj}</div>
-        </div>
-        <div class="belajar-letters">
-          ${letters.map(hurufMiniBlock).join('')}
-        </div>
+      const noteMatch = m.huruf.match(/\(([^)]*)\)/);
+      const rowNote = noteMatch ? noteMatch[1].trim() : '';
+      html += `<div class="belajar-card mkh-card">
+        <div class="mkh-header">${m.makhraj}</div>
+        ${letters.map(h => mkhLetterRow(h, rowNote)).join('')}
       </div>`;
     });
   });
