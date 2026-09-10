@@ -39,11 +39,11 @@ elegan, bukan playful/cerah — cocok untuk konteks belajar tajwid yang serius t
 }
 ```
 
-### 2.2 Token baru — DIREKOMENDASIKAN untuk memperbaiki inkonsistensi
+### 2.2 Token tambahan — SUDAH DITERAPKAN (2026-09)
 
-Saat ini banyak elemen (input, textarea, tombol kategori, tab, dll — ±10 tempat) memakai
+Sebelumnya banyak elemen (input, textarea, tombol kategori, tab, dll — ±10 tempat) memakai
 `#fffaf0` yang di-hardcode berulang, alih-alih token resmi. Ini rawan drift (satu tempat
-ke-update warnanya, tempat lain lupa). Tambahkan token berikut:
+ke-update warnanya, tempat lain lupa). Token berikut sudah dipakai di kode:
 
 ```css
 :root{
@@ -129,6 +129,47 @@ background:
 
 - Lebar app: `max-width: 480px`, center, `padding: 24px 14px 50px`
 - Mobile-first, single column
+
+### 4.3 Struktur layar per mode — WAJIB, patokan konsistensi antar-menu
+
+**Aturan utama:** ketiga mode utama (Belajar, Latihan, Challenge) HARUS memakai struktur
+yang sama — satu `.panel` (kotak krem, §7) sebagai wadah konten inti. Tidak boleh ada mode
+yang elemen intinya diletakkan langsung di atas latar gelap (`--ink`) tanpa panel pembungkus
+— itulah akar masalah "warna tiap menu beda-beda" yang pernah ditemukan (mode Latihan
+sempat tidak punya `.panel` sama sekali sebelum diperbaiki 2026-09).
+
+Polanya dua lapis, konsisten di ketiga mode:
+
+```
+[di luar panel, di atas latar gelap --ink]
+  - Tab kategori/chapter (.tabs / .tab)      -> lihat §10, background --idle-surface
+  - Info meta ringkas (mis. "Kartu 1/18", "Soal 1/20", skor berjalan)
+  - Progress bar tipis (.progress-bar)
+
+[.panel — SATU kotak krem, §7 double-border WAJIB]
+  - Konten inti yang sedang difokuskan (kartu, pertanyaan, daftar referensi)
+  - Kontrol aksi terkait konten itu (jawab, tandai hafal, tombol lanjut)
+  - Info sekunder (statistik, catatan)
+```
+
+| Mode | Di luar panel (dark bg) | Di dalam `.panel` (light bg) |
+|---|---|---|
+| **Challenge** (`screenQuiz`) | `.quiz-header` (label soal & skor) + `.progress-bar` | tag kategori, teks soal, opsi jawaban, penjelasan, tombol lanjut |
+| **Latihan** (`#modeFlashcard`) | `#flashcardTabs` (tab bab) + `.progress-row` + `.progress-bar` | kartu flip (`.stage`/`.card`), tombol Hafal/Belum, nav Sebelumnya/Berikutnya/Acak, statistik, reset |
+| **Belajar** (`#modeBelajar`) | `#belajarTabs` (tab kategori) | seluruh referensi (accordion makhraj, kartu sifat, dst) |
+
+**Konsekuensi warna:** begitu sebuah elemen pindah ke dalam `.panel` (latar terang), dia
+TIDAK BOLEH lagi pakai palet "di atas latar gelap" (teks `var(--paper)`/`#d8d0b8`, background
+transparan putih tipis seperti `rgba(255,255,255,0.04)`) — harus ganti ke palet "di atas
+paper" (§2.3): teks `var(--ink-2)`, kontrol kecil pakai `var(--surface)` +
+`var(--surface-border)`, aksen tetap `var(--ruby)`/`var(--ok)`/`var(--gold)` (token aksen
+sama dipakai di kedua latar, cuma kontras terhadap background-nya beda).
+
+Kalau sebuah class dipakai di KEDUA konteks (mis. `.nav-btn` dipakai untuk tombol
+"← Kembali" di luar panel, sekaligus tombol "Sebelumnya/Berikutnya" di dalam panel
+Latihan), jangan ubah style dasarnya — scope override khusus dengan selector ancestor
+(contoh: `#modeFlashcard .panel .nav-btn{...}`), supaya pemakaian di luar panel di
+tempat lain tidak ikut berubah.
 
 ---
 
@@ -219,7 +260,8 @@ diterapkan di `landingLoginPulse`, jadikan standar untuk animasi baru).
 | Tab aktif | 10px | `--ruby` atau `--gold-light` | sama dengan bg | none |
 | Badge pill kecil | 999px | `--surface` atau transparan | 1px | none |
 | Modal | 16px | gradient `--paper`→`--paper-2` | none | besar |
-| Overlay backdrop | — | `--overlay-dim` (BARU, satukan) | — | — |
+| Overlay backdrop | — | `--overlay-dim` (satukan) | — | — |
+| Mode utama (Belajar/Latihan/Challenge) | 18px | **wajib** 1 `.panel` per mode untuk konten inti (lihat §4.3) | sama seperti Card | sama seperti Card |
 
 ---
 
@@ -233,6 +275,9 @@ diterapkan di `landingLoginPulse`, jadikan standar untuk animasi baru).
    `uppercase` + `letter-spacing`.
 5. Tombol CTA utama? → Gradient emas + shadow berwarna (§6), font `Fraunces`.
 6. Modal/overlay baru? → Pakai `--overlay-dim`, bukan angka rgba baru.
+7. Menambah mode/layar baru? → Wajib ikuti struktur §4.3: konten inti dibungkus `.panel`,
+   cuma tab/meta/progress-bar yang boleh di luar panel. Cek juga apakah elemen di dalamnya
+   pakai palet "di atas paper" (§2.3), bukan palet untuk latar gelap.
 
 ---
 
@@ -242,4 +287,11 @@ diterapkan di `landingLoginPulse`, jadikan standar untuk animasi baru).
   3 sumber inkonsistensi: (1) `#fffaf0` hardcode berulang vs token `--paper`, (2) dua warna
   overlay berbeda (`rgba(0,0,0,0.65)` vs `rgba(13,33,29,0.72)`) untuk fungsi yang sama,
   (3) `rgba(255,255,255,0.02)` generik tanpa token untuk elemen idle. Token baru diusulkan
-  di §2.2 untuk menyatukan — **belum diterapkan ke kode**, menunggu konfirmasi.
+  di §2.2 untuk menyatukan.
+- **2026-09 (lanjutan)**: Token §2.2 diterapkan ke kode. Ditemukan sumber inkonsistensi ke-4
+  yang lebih besar: mode **Latihan** tidak dibungkus `.panel` sama sekali (elemen-elemennya —
+  tombol Hafal/Belum, nav Sebelumnya/Berikutnya/Acak, statistik — didesain untuk latar gelap,
+  langsung duduk di atas `--ink`), beda dari Belajar & Challenge yang sudah pakai `.panel`.
+  Ditambahkan §4.3 sebagai patokan struktur layar per mode, dan Latihan dibungkus `.panel`
+  mengikuti pola yang sama dengan `screenQuiz` (tab/meta/progress-bar di luar panel, konten
+  inti + kontrol di dalam panel).

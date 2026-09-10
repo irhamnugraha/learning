@@ -402,17 +402,21 @@
   }
   .belajar-profil-attrs{ font-size:12px; line-height:1.6; color:var(--ink-2); }
 
-  /* ---------- flashcard mode (unchanged) ---------- */
+  /* ---------- flashcard mode ----------
+     Kartu dibungkus .panel yang sama dipakai Belajar & Challenge (lihat
+     DESIGN_SYSTEM.md §4.3) — tab kategori & progress bar tetap di luar panel
+     (di atas latar gelap), sama seperti pola quiz-header+progress-bar di
+     screenQuiz. Elemen di bawah ini jadi berada DI DALAM panel krem, jadi
+     warnanya disesuaikan (bukan lagi didesain untuk latar gelap). */
   .stage{ perspective:1400px; margin-bottom:18px; }
   .card{ position:relative; width:100%; height:320px; transform-style:preserve-3d; transition:transform .55s cubic-bezier(.2,.8,.2,1); cursor:pointer; }
   .card.flipped{ transform:rotateY(180deg); }
   .face{
-    position:absolute; inset:0; backface-visibility:hidden; border-radius:18px;
-    background:linear-gradient(180deg, var(--paper), var(--paper-2));
-    border:1px solid rgba(185,144,47,0.35); box-shadow:0 18px 40px rgba(0,0,0,0.35);
+    position:absolute; inset:0; backface-visibility:hidden; border-radius:14px;
+    background:var(--surface);
+    border:1px solid var(--surface-border);
     display:flex; flex-direction:column; padding:22px; color:var(--ink-2); overflow:hidden;
   }
-  .face::before{ content:""; position:absolute; top:10px; left:10px; right:10px; bottom:10px; border:1px solid rgba(122,52,48,0.18); border-radius:12px; pointer-events:none; }
   .face-back{ transform:rotateY(180deg); }
   .card-tag{ font-family:'JetBrains Mono', monospace; font-size:10.5px; letter-spacing:0.12em; text-transform:uppercase; color:var(--ruby); margin-bottom:auto; }
   .arabic-big{ font-family:'Amiri', serif; font-size:192px; text-align:center; line-height:1; color:var(--ink-2); margin:auto 0; direction:rtl; }
@@ -430,6 +434,15 @@
   .stats{ display:flex; justify-content:space-between; margin-top:22px; padding-top:16px; border-top:1px solid rgba(226,192,115,0.15); font-family:'JetBrains Mono', monospace; font-size:11px; color:#a89c78; }
   .stats span b{ color:var(--gold-light); font-size:14px; }
   .reset{ display:block; margin:14px auto 0; background:none; border:none; color:#8a7f5f; font-family:'JetBrains Mono', monospace; font-size:11px; text-decoration:underline; cursor:pointer; }
+  /* .nav-btn dasar didesain untuk latar gelap (dipakai back-row/menu-utama di
+     luar panel) — di dalam .panel Latihan warnanya perlu dibalik ke light-surface,
+     ikut konvensi §2.3 (permukaan kontrol kecil di atas card = --surface). */
+  #modeFlashcard .panel .nav-btn{ background:var(--surface); border-color:var(--surface-border); color:var(--ink-2); }
+  #modeFlashcard .panel .nav-btn:hover{ border-color:var(--ruby); }
+  #modeFlashcard .panel .btn-belum{ background:rgba(122,52,48,0.1); color:var(--ruby); border-color:rgba(122,52,48,0.35); }
+  #modeFlashcard .panel .btn-hafal{ background:rgba(79,122,83,0.12); color:var(--ok); border-color:rgba(79,122,83,0.4); }
+  #modeFlashcard .panel .stats{ border-top-color:rgba(122,52,48,0.15); color:#8a7f5f; }
+  #modeFlashcard .panel .stats span b{ color:var(--ruby); }
   .tabs{ display:flex; gap:8px; margin-bottom:16px; }
   .tab{ flex:1; padding:10px 8px; border-radius:10px; border:1px solid rgba(226,192,115,0.25); background:var(--idle-surface); color:#d8d0b8; font-family:'Inter'; font-weight:600; font-size:13px; cursor:pointer; text-align:center; }
   .tab.active{ background:var(--gold-light); color:var(--ink-2); border-color:var(--gold-light); }
@@ -722,38 +735,40 @@
     </div>
     <div class="progress-bar"><div class="progress-fill" id="progressFill"></div></div>
 
-    <div class="stage">
-      <div class="card" id="card">
-        <div class="face face-front">
-          <div class="card-tag" id="frontTag">MAKHARIJUL HURUF</div>
-          <div class="q-text" id="frontArabic" style="margin:auto 0;">—</div>
-          <div class="front-hint">ketuk untuk lihat jawaban</div>
-        </div>
-        <div class="face face-back">
-          <div class="back-title" id="backTitle">Jawaban</div>
-          <div class="back-body" id="backBody">—</div>
+    <div class="panel">
+      <div class="stage">
+        <div class="card" id="card">
+          <div class="face face-front">
+            <div class="card-tag" id="frontTag">MAKHARIJUL HURUF</div>
+            <div class="q-text" id="frontArabic" style="margin:auto 0;">—</div>
+            <div class="front-hint">ketuk untuk lihat jawaban</div>
+          </div>
+          <div class="face face-back">
+            <div class="back-title" id="backTitle">Jawaban</div>
+            <div class="back-body" id="backBody">—</div>
+          </div>
         </div>
       </div>
-    </div>
 
-    <div class="controls">
-      <button class="btn btn-belum" id="btnBelum">✕ Belum Hafal</button>
-      <button class="btn btn-hafal" id="btnHafal">✓ Hafal</button>
-    </div>
+      <div class="controls">
+        <button class="btn btn-belum" id="btnBelum">✕ Belum Hafal</button>
+        <button class="btn btn-hafal" id="btnHafal">✓ Hafal</button>
+      </div>
 
-    <div class="nav-row">
-      <button class="nav-btn" id="btnPrev">← Sebelumnya</button>
-      <button class="nav-btn wide" id="btnNextCard">Berikutnya →</button>
-      <button class="nav-btn shuffle" id="btnShuffle" title="Acak">⟲ Acak</button>
-    </div>
+      <div class="nav-row">
+        <button class="nav-btn" id="btnPrev">← Sebelumnya</button>
+        <button class="nav-btn wide" id="btnNextCard">Berikutnya →</button>
+        <button class="nav-btn shuffle" id="btnShuffle" title="Acak">⟲ Acak</button>
+      </div>
 
-    <div class="stats">
-      <span>Hafal <b id="statHafal">0</b></span>
-      <span>Belum <b id="statBelum">0</b></span>
-      <span>Belum dicoba <b id="statUntried">18</b></span>
-    </div>
+      <div class="stats">
+        <span>Hafal <b id="statHafal">0</b></span>
+        <span>Belum <b id="statBelum">0</b></span>
+        <span>Belum dicoba <b id="statUntried">18</b></span>
+      </div>
 
-    <button class="reset" id="btnReset">reset progres bab ini</button>
+      <button class="reset" id="btnReset">reset progres bab ini</button>
+    </div>
   </div>
 
   <!-- ================= BELAJAR MODE ================= -->
